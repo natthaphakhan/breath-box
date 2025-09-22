@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breath Box</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #333333 100%);
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .breath-container {
+            text-align: center;
+            position: relative;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 3rem;
+            letter-spacing: 2px;
+            opacity: 0.9;
+        }
+
+        .circle-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 3rem auto;
+        }
+
+        .breath-circle {
+            width: 100%;
+            height: 100%;
+            border: 3px solid white;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: transform 4s cubic-bezier(0.4, 0, 0.6, 1);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .breath-circle.inhale {
+            transform: scale(1.3);
+        }
+
+        .breath-circle.exhale {
+            transform: scale(0.8);
+        }
+
+        .instruction {
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            min-height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 1px;
+        }
+
+        .timer {
+            font-size: 3rem;
+            font-weight: 100;
+            opacity: 0.7;
+            font-variant-numeric: tabular-nums;
+            min-height: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn {
+            background: none;
+            border: 2px solid white;
+            color: white;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border-radius: 30px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+            font-weight: 300;
+        }
+
+        .control-btn:hover {
+            background: white;
+            color: black;
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .control-btn:disabled:hover {
+            background: none;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .breath-circle.hold {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="breath-container">
+        <h1 class="title">BREATH</h1>
+        
+        <div class="circle-container">
+            <div class="breath-circle" id="breathCircle"></div>
+        </div>
+        
+        <div class="instruction" id="instruction">Click Start to Begin</div>
+        <div class="timer" id="timer">4</div>
+        
+        <div>
+            <button class="control-btn" id="startBtn" onclick="startBreathing()">START</button>
+            <button class="control-btn" id="pauseBtn" onclick="pauseBreathing()" disabled>PAUSE</button>
+            <button class="control-btn" id="resetBtn" onclick="resetBreathing()">RESET</button>
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false;
+        let isPaused = false;
+        let currentPhase = 0; // 0: inhale, 1: hold, 2: exhale, 3: hold
+        let currentCount = 4;
+        let interval;
+        let phaseTimeout;
+        
+        const phases = ['Breathe In', 'Hold', 'Breathe Out', 'Hold'];
+        const circle = document.getElementById('breathCircle');
+        const instruction = document.getElementById('instruction');
+        const timer = document.getElementById('timer');
+        
+        function updateUI() {
+            instruction.textContent = phases[currentPhase];
+            timer.textContent = currentCount;
+            
+            // Remove all classes
+            circle.classList.remove('inhale', 'exhale', 'hold');
+            
+            // Add appropriate class based on phase
+            if (currentPhase === 0) {
+                circle.classList.add('inhale');
+            } else if (currentPhase === 2) {
+                circle.classList.add('exhale');
+            } else {
+                circle.classList.add('hold');
+            }
+        }
+        
+        function nextPhase() {
+            currentPhase = (currentPhase + 1) % 4;
+            currentCount = 4;
+            updateUI();
+            startPhaseTimer();
+        }
+        
+        function startPhaseTimer() {
+            if (!isRunning || isPaused) return;
+            
+            interval = setInterval(() => {
+                if (!isRunning || isPaused) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                currentCount--;
+                timer.textContent = currentCount;
+                
+                if (currentCount === 0) {
+                    clearInterval(interval);
+                    phaseTimeout = setTimeout(nextPhase, 100);
+                }
+            }, 1000);
+        }
+        
+        function startBreathing() {
+            if (isPaused) {
+                isPaused = false;
+                startPhaseTimer();
+            } else {
+                isRunning = true;
+                currentPhase = 0;
+                currentCount = 4;
+                updateUI();
+                startPhaseTimer();
+            }
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+        }
+        
+        function pauseBreathing() {
+            isPaused = true;
+            clearInterval(interval);
+            clearTimeout(phaseTimeout);
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+        }
+        
+        function resetBreathing() {
+            isRunning = false;
+            isPaused = false;
+            currentPhase = 0;
+            currentCount = 4;
+            
+            clearInterval(interval);
+            clearTimeout(phaseTimeout);
+            
+            circle.classList.remove('inhale', 'exhale', 'hold');
+            
+            instruction.textContent = 'Click Start to Begin';
+            timer.textContent = '4';
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+        }
+    </script>
+</body>
+</html>
